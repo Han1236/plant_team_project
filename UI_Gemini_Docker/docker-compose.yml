@@ -1,0 +1,26 @@
+services:
+  fastapi:
+    build:
+      context: ./fastapi
+    container_name: fastapi-backend
+    ports:
+      - "8000:8000"
+    networks:
+      - app-network
+    env_file:
+      - .env  # 환경 변수 설정 (예: GOOGLE_API_KEY 등)
+
+  streamlit:
+    build:
+      context: ./streamlit
+    container_name: streamlit-frontend
+    ports:
+      - "8501:8501"
+    networks:
+      - app-network
+    depends_on:
+      - fastapi
+
+networks:
+  app-network:
+    driver: bridge
