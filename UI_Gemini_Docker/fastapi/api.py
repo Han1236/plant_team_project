@@ -6,7 +6,7 @@ import re
 import google.generativeai as genai
 from pydantic import BaseModel
 from gemini_api import gen_text, gen_chat
-from langchain.memory import ChatMessageHistory
+from langchain_community.chat_message_histories import ChatMessageHistory
 
 app = FastAPI()
 
