@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  web-server:
+    build:
+      context: ./web-server
+    container_name: web-server
+    ports:
+      - "8000:8000"
+    environment:
+      - MODEL_SERVER_URL=http://model-server:8001
+      - DATABASE_URL=postgresql+asyncpg://postgres:mypassword@db:5432/mydatabase
+    depends_on:
+      - model-server
+      - db
+    networks:
+      - app-network
+
+  model-server:
+    build:
+      context: ./model-server
+    container_name: model-server
+    environment:
+      - MODEL_NAME=Gemini
+    ports:
+      - "8001:8001"
+    networks:
+      - app-network
+
+  streamlit-ui:
+    build:
+      context: ./ui
+    container_name: ui
+    ports:
+      - "8501:8501"
+    depends_on:
+      - web-server
+    networks:
+      - app-network
+  
+  db:
+    image: postgres:15  # 기존 build를 PostgreSQL 공식 이미지 사용으로 변경
+    container_name: postgres_db
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=mypassword
+      - POSTGRES_DB=mydatabase
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data  # 데이터 보존
+      - ./db/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh  # 초기 SQL 실행
+    networks:
+      - app-network
+
+volumes:
+  pgdata:
+
+networks:
+  app-network:

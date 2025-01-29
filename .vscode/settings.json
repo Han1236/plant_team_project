@@ -1,0 +1,5 @@
+{
+    "pylint.path": [
+        "/opt/anaconda3/envs/aiproject/bin/pylint"
+    ]
+}

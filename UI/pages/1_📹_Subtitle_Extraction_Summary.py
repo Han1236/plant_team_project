@@ -1,5 +1,9 @@
 import streamlit as st
 import requests
+import datetime
+
+# 웹 서버 URL 설정
+WEB_SERVER_URL = "http://localhost:8000"
 
 # 페이지 설정
 st.set_page_config(
@@ -12,102 +16,159 @@ st.write("# Youtube 자막 추출 및 요약")
 # 유튜브 비디오 URL 입력
 video_url = st.text_input("Youtube 영상 URL을 입력하세요:", "https://www.youtube.com/watch?v=2J8ORNpH3Uk")
 
+# yt-dlp를 사용하여 비디오 정보 추출 함수 (캐시 사용)
+# @st.cache_resource
+# def get_video_info(video_url):
+#     opts = {}
+#     with YoutubeDL(opts) as yt:
+#         info = yt.extract_info(video_url, download=False)
+#     return info
+
+#비디오 자막 요청
+def get_video_info(video_url):
+    response = requests.post(f"{WEB_SERVER_URL}/video_info", json={"video_url": video_url})
+    if response.status_code == 200:
+        return response.json()
+    else:
+        st.error("영상 정보 또는 자막 다운로드에 실패했습니다.")
+        return None
+    
+#요약 요청
+def summarize_with_api(transcript_text):
+    response = requests.post(f"{WEB_SERVER_URL}/summarize", json={"prompt": transcript_text})
+    if response.status_code == 200:
+        return response.json().get("summary")
+    else:
+        return "요약에 실패했습니다."
+
+## 타임라인 생성 함수 (캐시 사용) -> 추후 반영
+# @st.cache_data
+# def generate_markdown_timeline(chapters):
+#     """
+#     주어진 chapters 데이터를 바탕으로 Markdown 형식의 영상 타임라인을 생성합니다.
+#     """
+#     markdown_text = "#### 영상 타임라인\n"
+#     for chapter in chapters:
+#         start_time = f"{int(chapter['start_time']) // 60}:{int(chapter['start_time']) % 60:02d}"
+#         end_time = f"{int(chapter['end_time']) // 60}:{int(chapter['end_time']) % 60:02d}"
+#         markdown_text += f":blue-background[**{start_time} ~ {end_time}**]\n"
+#         markdown_text += f"{chapter['title']}\n\n"
+#     return markdown_text
+
+# # 자막 다운로드 함수 -> 추후 반영
+# @st.cache_resource
+# def download_subtitle(subtitle_url, filename="subtitle.vtt"):
+#     """
+#     주어진 URL에서 자막을 다운로드합니다.
+#     """
+#     try:
+#         response = requests.get(subtitle_url, stream=True)
+#         response.raise_for_status()
+        
+#         # 파일 저장
+#         with open(filename, 'wb') as f:
+#             for chunk in response.iter_content(chunk_size=1024):
+#                 if chunk:
+#                     f.write(chunk)
+
+#         st.success(f"자막 파일이 {filename}으로 저장되었습니다.")
+#     except requests.exceptions.RequestException as e:
+#         st.error(f"자막 다운로드 실패: {e}")
+
+# 비디오 정보가 있을 때 출력
 if video_url:
+    with st.spinner("잠시 기다려주세요..."):
+        # 비디오 정보 및 자막 요청
+        video_info = get_video_info(video_url)
+    
+    if video_info:
+        # 비디오 정보 추출
+        title = video_info.get("title", "")
+        channel = video_info.get("channel", "")
+        views = video_info.get("view_count", "")
+        upload_date = video_info.get("upload_date", "")
+        duration = video_info.get("duration_string", "")
+        timeline = video_info.get("timeline", "")
+        subtitle = video_info.get("subtitle", "")
+
+        # 조회수 포맷: 천 단위로 쉼표 추가
+        formatted_views = f"{views:,}"
+
+        # 업로드 날짜 포맷: YYYY.MM.DD
+        formatted_upload_date = datetime.datetime.strptime(upload_date, "%Y%m%d").strftime("%Y.%m.%d")
+
+        # # 타임라인 생성
+        # markdown_result = generate_markdown_timeline(info.get('chapters')) if 'chapters' in info else "타임라인 정보가 없습니다."
+
+        # 비디오 정보 출력
         col1, col2 = st.columns([1, 1])  # 1:1 비율로 두 칸 분리
         with col1:
-            st.subheader("📷영상 정보")
-            st.write("#### 입력된 Youtube URL")
-            st.text(f"{video_url}")
-            
-            st.write("#### 제목")
-            st.text("(예시) 제2의 엔비디아로 불리는, AI 반도체 최강 기업")
-            
-            st.write("#### 영상 길이")
-            st.text("5분 30초")
+            st.subheader("📷 영상 정보")
+            st.markdown(f"""
+                        #### 제목:
+                        :blue-background[**{title}**]
+                        #### 입력된 Youtube URL:
+                        {video_url}
+                        ##### 채널: {channel} | 조회수: **{formatted_views}** 회
+                        ##### 업로드날짜: {formatted_upload_date}
+                        ##### 영상 길이: {duration}
+                        """)
 
         with col2:
-            st.subheader("")
-            st.markdown(f'''
-                        #### 영상 타임라인
-                        :blue-background[**0:00 ~ 7:31**]
-                        사상 8번째로 시총 1조 달러 클럽에 진입한 뜨거운 감자
-                        \n
-                        :blue-background[**7:31 ~ 17:37**]
-                        맞춤형 ASIC 칩이란 무엇인가
-                        \n
-                        :blue-background[**17:37 ~**]
-                        쏟아지는 중국산 메모리, 걱정되는 삼성전자''')
+            st.subheader("📝 타임라인")
+            st.markdown(timeline)
+
+    # # 자막 보기 체크박스 -> 삭제예정
+    # if st.checkbox("전체 자막 보기"):
+    #     st.subheader("자막 정보")
+        
+    #     # 자막 형식 필터링: JSON3, TTML, VTT만 출력
+    #     for subtitle in info['subtitles']['ko']:
+    #         subtitle_ext = subtitle['ext']
             
-        st.write("")
-        if st.checkbox("전체 자막 보기"):
-            st.subheader("자막 정보")
-            st.markdown('''
-                        자, 두 번째 주제는 오랜만에 기업 얘기 한번 해보겠습니다.  
-                        시총 1조 달러를 돌파한 :blue-background[**브로드컴**] 얘기를 한번 해보겠습니다.   
+    #         # JSON3, TTML, VTT 형식만 필터링
+    #         if subtitle_ext in ['json3', 'srv1', 'ttml', 'vtt']:
+    #             subtitle_url = subtitle['url']
+    #             # URL을 보기 좋게 링크로 표시
+    #             st.write(f"- {subtitle_ext}: [링크로 열기]({subtitle_url})")
+                
+    #             # 다운로드 버튼
+    #             if st.button(f"다운로드 ({subtitle_ext})", key=subtitle_url):
+    #                 download_subtitle(subtitle_url)
+                    
+    # # 요약 요청 -> 삭제예정
+    #     if st.button("자막 요약 요청"):
+    #         subtitle_url = download_subtitle
+    #         response = requests.get(subtitle_url)
+    #         if response.status_code == 200:
+    #             subtitle_text = response.text
+    #             st.text_area("자막 내용", subtitle_text[:500], height=200)
 
-                        브로드컴이라는 기업이 **시가총액의 1조 달러**, 우리나라로 1,450조죠.  
-                        지금은 1400조 원을 돌파하는 기염을 토했습니다.   
+    #             # 웹 서버로 요약 요청
+    #             try:
+    #                 with st.spinner("요약 요청 중..."):
+    #                     summarize_response = requests.post(
+    #                         f"{WEB_SERVER_URL}/chat",
+    #                         files={"file": ("subtitle.vtt", subtitle_text.encode("utf-8"))}
+    #                     )
+    #                     summarize_response.raise_for_status()
+    #                     summary = summarize_response.json().get("summary", "요약 결과 없음")
+    #                     st.subheader("📚 요약 결과")
+    #                     st.markdown(summary)
+    #             except requests.exceptions.RequestException as e:
+    #                 st.error(f"요약 요청 실패: {e}")
+    #         else:
+    #             st.error("자막을 가져오는 데 실패했습니다.")
+    # # except Exception as e:
+    # #     st.error(f"유튜브 정보를 가져오는 데 실패했습니다: {e}")
 
-                        최근 미국에서 가장 뜨거운 종목이 뭐냐, 조그만 종목들 빼면 당연히 브로드컴입니다.  
-                        12월 12일날 무려 24%가 올랐어요.  
-                        ***사상 최고치의 주가를 경신***하면서 시가총액 1조 달러를 돌파했습니다.   
+        # 자막 텍스트 출력
+        st.subheader("자막 내용")
+        st.text_area("전체 자막", subtitle, height=300)
 
-                        이게 미국 기업으로 8번째인가 그래요.  
-                        1조 달러를 돌파한 기업이 8개인가 밖에 없어요.   
-
-                        게다가 시가총액 1조 달러면 1,400조가 넘는 기업인데 12월 13일날 24%, 12월 16일날 12%.  
-                        삼성전자 3배짜리 기업이 20%씩 올라   
-
-                        물론 지금은 좀 조정 받았는데 엄청나게 가파른 상승을 보여줬기 때문에  
-                        뭐 지금 월가를 뒤덮는 기업에 대한 얘기는 거의 다 브로드컴 얘기라고 할 수 있습니다.   
-
-                        현재 브로드컴의 시가총액은 테슬라가 8위고요,  
-                        전 세계 시가총액 9위입니다.
-                        ''')
-        st.write("")
+        # 요약 보기 체크박스
         if st.checkbox("요약 보기"):
-            st.subheader(":cherry_blossom:요약 결과:cherry_blossom:")
-
-            # 하나의 st.markdown에 모든 내용을 포함
-            st.markdown('''
-            ### 브로드컴 분석: 시총 1조 달러 클럽 진입의 비결과 한국 반도체 산업의 과제
-            #### 1. 브로드컴, 사상 8번째 시총 1조 달러 클럽 진입
-            브로드컴이 12월 12일 주가가 24% 급등하며 사상 최고치를 경신, 시가총액 1조 달러를 돌파하며 미국 기업 중 8번째로 이 기록을 달성했습니다.
-            이는 삼성전자 시총의 3배에 달하는 규모이며, 단기간에 20% 이상의 주가 상승을 보여주며 월가에서 가장 주목받는 기업 중 하나가 되었습니다.
-
-            ##### 주요 내용:
-            - **12월 12일**, 24% 주가 급등으로 시총 1조 달러 돌파 (미국 8번째)
-            - 전 세계 시총 **9위** 기록 (테슬라 8위, 애플, 엔비디아, 마이크로소프트 등이 상위권)
-            - 2020년 이후 **주가 600% 상승** (동기간 삼성전자 주가는 5% 하락)
-            - **AI 반도체 시장**의 성장과 함께 급부상 (엔비디아, TSMC와 함께 세계 랭킹 10위 내 AI 반도체 기업 3개)
-            - **3분기 매출 51% 증가**, 순이익 23% 증가 (약 5.5조 원)
-            - **14년 연속 배당금 확대** 발표
-
-            #### 2. 맞춤형 ASIC 칩이란 무엇인가?
-            브로드컴의 성공 요인은 바로 맞춤형 **ASIC AI 칩**입니다. ASIC 칩은 특정 목적에 맞춰 설계된 칩으로, 모든 기능을 수행하는 범용 칩인 엔비디아의 GPU와는 차이가 있습니다.
-            GPU는 높은 성능과 범용성을 제공하지만, ASIC 칩은 특정 작업에 최적화되어 뛰어난 효율과 저렴한 가격을 제공합니다.
-
-            ##### 주요 내용:
-            - **ASIC 칩**: 특정 목적에 최적화된 맞춤형 칩 (GPU 대비 효율성, 가격 경쟁력 우위)
-            - **GPU**: 범용 칩으로 높은 성능과 유연성을 제공하지만 가격이 비쌈
-            - AI 모델 훈련에는 GPU가 필요하지만, 실제 추론 단계에서는 **ASIC 칩**이 효율적
-            - 엔비디아의 높은 마진율 (70% 이상)로 인해 ASIC 칩에 대한 수요 증가
-            - 브로드컴은 맞춤형 칩 시장의 **55~60%** 점유
-            - **미래 AI 컴퓨팅 파워의 50%** 를 맞춤형 ASIC 칩이 차지할 것이라는 전망
-
-            #### 3. 중국산 메모리 공세와 한국 반도체 산업의 과제
-            브로드컴의 맞춤형 칩에는 **HBM**이 탑재됩니다. 이는 삼성전자와 SK하이닉스에게 새로운 수요처가 될 수 있습니다.
-            실제로 SK하이닉스는 브로드컴과 HBM 대량 공급을 논의 중인 것으로 알려져 있습니다. 하지만 **중국산 범용 메모리**의 공세는 한국 반도체 산업에 큰 위협이 되고 있습니다.
-
-            ##### 주요 내용:
-            - 브로드컴의 맞춤형 칩에 **HBM** 탑재 (삼성전자, SK하이닉스에 기회 요인)
-            - **중국산 범용 메모리**의 저가 공세로 한국 기업의 수익성 악화 우려
-            - 삼성전자는 중국 메모리 업체의 영향으로 실적 하락을 명시
-            - 한국 반도체 산업의 **경쟁력 강화를 위한 대책 마련** 필요성 제기
-            - **파운드리 경쟁 심화** (삼성전자, 중국 SMIC에 추격 당할 위기)
-            - **정부의 반도체 산업 지원** 및 기술 경쟁력 확보의 중요성 강조
-
-            ##### 결론
-            이러한 분석을 통해 브로드컴의 성공 요인을 파악하고, 한국 반도체 산업이 직면한 과제를 이해할 수 있습니다. 
-            특히, **AI 반도체 시장의 변화**에 발맞춰 한국 기업들도 새로운 전략을 모색해야 할 시점임을 시사합니다.
-            ''')
+            st.subheader(":cherry_blossom: 요약 결과 :cherry_blossom:")
+            with st.spinner("자막을 요약중입니다. 잠시 기다려주세요..."):
+                summary = summarize_with_api(subtitle)
+            st.markdown(summary)

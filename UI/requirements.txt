@@ -1,3 +1,6 @@
-fastapi==0.115.6
-requests==2.32.3
-streamlit==1.41.1
+fastapi
+requests
+streamlit
+google.generativeai
+datetime
+yt_dlp

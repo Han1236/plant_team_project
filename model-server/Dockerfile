@@ -8,15 +8,17 @@ RUN apt-get update && apt-get install -y curl
 WORKDIR /app
 
 # 종속성 설치
-COPY requirements.txt .
+COPY app/requirements.txt .
 RUN pip3 install --no-cache-dir -r requirements.txt
 
 # 코드 복사
-COPY . .
+COPY app/ /app/
 
-# Streamlit 실행 포트
-EXPOSE 8501
+# FastAPI 실행 포트
+EXPOSE 8001
 
-# Streamlit 실행 명령
-CMD ["streamlit", "run", "app.py", "--server.port", "8501", "--server.address", "0.0.0.0"]
+# FastAPI 실행 명령
+CMD ["uvicorn", "model_server:app", "--host", "0.0.0.0", "--port", "8001"]
+
+
 
