@@ -1,3 +1,4 @@
 fastapi
 requests
 streamlit
+yt_dlp

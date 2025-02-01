@@ -61,43 +61,61 @@ def get_video_info_and_subtitles(video_url: str):
     한글 자막(ko)이 있으면 VTT 파일을 읽어 텍스트로 정제해 반환합니다.
     """
     opts = {
-        "writesubtitles": True,         # 첨부된 자막 다운로드
-        "writeautomaticsub": True,      # 자동 생성된 자막 다운로드
-        "skip_download": True,          # 비디오 다운로드는 하지 않음
-        "subtitlesformat": "vtt",       # 자막 형식
-        "outtmpl": "%(title)s",         # 영상 제목으로 파일명 지정
-        "subtitleslangs": ["ko"],       # 한국어 자막만 다운로드
+        "writesubtitles": True,           # 자막 다운로드
+        "writeautomaticsub": True,        # 자동 자막 다운로드
+        "skip_download": True,            # 비디오 다운로드는 하지 않음
+        "subtitlesformat": "vtt",         # 자막 형식
+        "outtmpl": "%(id)s.%(ext)s",      # 영상 ID로 파일명 지정
+        "subtitleslangs": ["ko"],         # 한국어 자막만 다운로드
     }
 
     try:
         with yt_dlp.YoutubeDL(opts) as yt:
+            # 영상 정보 추출
             info = yt.extract_info(video_url, download=False)
             video_title = info.get('title', None)
-            
+
             if video_title:
-                sanitized_title = re.sub(r'[\\/*?:"<>|]', "", video_title)
+                # 영상 ID를 기반으로 파일명을 지정
+                video_id = info.get('id', '')
+                subtitle_file = f"{video_id}.ko.vtt"
+                print(f"다운로드된 자막 파일 경로: {subtitle_file}")
+
+                # 자막 다운로드
                 yt.download([video_url])
-                subtitle_file = f'{sanitized_title}.ko.vtt'
-            
+
                 # 자막 파일이 존재하면 텍스트 추출
                 if os.path.exists(subtitle_file):
                     with open(subtitle_file, "r", encoding="utf-8") as f:
                         content = f.read()
-                    # 자막 내용 정리(메타데이터와 타임스탬프, 자막 번호를 제거)
-                    clean_content = "\n".join([
-                        line for line in content.splitlines()
-                        if "-->" not in line and not line.strip().isdigit() and "WEBVTT" not in line
-                    ])
+
+                    # 1. 'WEBVTT' 또는 'Kind' 같은 메타데이터 제거
+                    # 2. 타임스탬프 및 HTML 태그 제거
+                    clean_content = re.sub(r'WEBVTT.*?Kind.*?Language.*?\n', '', content, flags=re.DOTALL)  # 메타데이터 제거
+                    clean_content = re.sub(r'<.*?>', '', clean_content)  # <c> 태그 및 HTML 태그 제거
+                    clean_content = re.sub(r'<\d{2}:\d{2}:\d{2}\.\d{3}>', '', clean_content)  # 타임스탬프 제거
+                    clean_content = re.sub(r'\d{2}:\d{2}:\d{2}\.\d{3} --> \d{2}:\d{2}:\d{2}\.\d{3}', '', clean_content)  # 타임스탬프 형식 제거
+
+                    # 3. 'align:start position:0%' 제거
+                    clean_content = re.sub(r'align:start position:\d+%', '', clean_content)  # align:start 제거
+
+                    # 4. 중복된 자막 제거 (텍스트가 반복되면 중복된 부분 제거)
+                    clean_content = "\n".join(sorted(set(clean_content.splitlines()), key=lambda x: clean_content.index(x)))
+
+                    # 자막 내용 정리(불필요한 줄이나 빈 줄 제거)
+                    clean_content = "\n".join([line.strip() for line in clean_content.splitlines() if line.strip()])
+
                     return info, clean_content
                 else:
-                    # 자막이 없을 경우 처리 (첨부된 자막, 자동 생성된 자막이 없는 경우)
+                    # 자막이 없는 경우 처리
                     return info, "자막이 없습니다."
         
             else:
                     # 영상 정보가 없을 경우
                     return None, "영상 정보를 찾을 수 없습니다."
     except Exception as e:
-        return None, None                
+        print(f"오류 발생: {e}")
+        return None, None
 
 def generate_markdown_timeline(chapters):
     """
@@ -127,9 +145,11 @@ def get_video_info(request: VideoRequest):
     """
     video_url = request.video_url
 
+    # 이미 처리된 URL인지 확인
     if video_url in processed_videos:
-        return processed_videos[video_url]
+        return processed_videos[video_url] # 이미 처리된 결과 반환
 
+    # 새로 처리하는 경우
     info, clean_subtitle = get_video_info_and_subtitles(video_url)
     if info is None:
         raise HTTPException(status_code=400, detail="영상 정보 추출 실패")
@@ -140,7 +160,7 @@ def get_video_info(request: VideoRequest):
         "view_count": info.get("view_count", 0),
         "upload_date": info.get("upload_date", ""),
         "duration_string": info.get("duration_string", ""),
-        "timeline": generate_markdown_timeline(info.get("chapters")),
+        "timeline": generate_markdown_timeline(info.get('chapters')) if 'chapters' in info else "타임라인 정보가 없습니다.",
         "subtitle": clean_subtitle
     }
     processed_videos[video_url] = result
