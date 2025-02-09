@@ -1,0 +1,60 @@
+services:
+  web-server:
+    build:
+      context: ./web_server
+    container_name: web-server
+    ports:
+      - "8000:8000"
+    environment:
+      - MODEL_SERVER_URL=http://model-server:8001
+    depends_on:
+      - model-server
+      - db
+    networks:
+      - app-network
+
+  model-server:
+    build:
+      context: ./model_server
+    container_name: model-server
+    environment:
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY} # .env 파일에서 GOOGLE_API_KEY 로드
+    ports:
+      - "8001:8001"
+    networks:
+      - app-network
+
+  streamlit-ui:
+    build:
+      context: ./ui
+    container_name: ui
+    ports:
+      - "8501:8501"
+    depends_on:
+      - web-server
+    environment: 
+      - WEB_SERVER_URL=http://web-server:8000
+    networks:
+      - app-network
+
+  db:
+    image: postgres:15
+    container_name: postgres_db
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=mypassword
+      - POSTGRES_DB=mydatabase
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+    networks:
+      - app-network
+
+volumes:
+  pgdata:
+
+networks:
+  app-network:
