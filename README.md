@@ -16,4 +16,32 @@ YouTube Channel “슈카월드” 의 음성인식 및 대본생성 후 요약 
 📕 설명
 이 프로젝트는 Whisper와 같은 음성-텍스트 변환(STT) 기술을 사용해 경제 유튜버들의 영상을 텍스트로 변환한 후, LLM (Large Language Model) 기반의 언어 모델(Llama, Qwen 등)을 활용하여 핵심 내용을 요약합니다. 또한 영상 내용을 바탕으로 RAG (Retrieval-Augmented Generation)를 통해 시청자가 질문할 경우 해당 내용에서 정보를 찾아 맞춤형 답변을 제공합니다.
 
+💡 데모 영상
+
+🔹 영상 URL 입력, 영상 정보 및 자막 출력, DB에 자막 저장, 요약 결과 제공
 ![Demo](https://github.com/Han1236/plant_team_project/raw/feature/chat_memory/demo/데모영상_1.gif)
+
+
+
+
+
+
+
+
+
+
+
+🔹 QnA 챗봇, 질문하고 싶은 영상 클릭 후 대화, 이전 대화 기억
+![Demo](https://github.com/Han1236/plant_team_project/raw/feature/chat_memory/demo/데모영상_2.gif)
+
+
+
+
+
+
+
+
+
+
+🔹 다른 영상 선택 후 DB에 자막 저장, ChromaDB 중복 생성 방지, 챗봇 대화
+![Demo](https://github.com/Han1236/plant_team_project/raw/feature/chat_memory/demo/데모영상_3.gif)
