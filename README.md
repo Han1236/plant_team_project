@@ -18,30 +18,22 @@ YouTube Channel “슈카월드” 의 음성인식 및 대본생성 후 요약 
 
 💡 데모 영상
 
+---
 🔹 영상 URL 입력, 영상 정보 및 자막 출력, DB에 자막 저장, 요약 결과 제공
 ![Demo](https://github.com/Han1236/plant_team_project/raw/feature/chat_memory/demo/데모영상_1.gif)
 
+---
+<br><br><br><br><br>
 
-
-
-
-
-
-
-
-
-
+---
 🔹 QnA 챗봇, 질문하고 싶은 영상 클릭 후 대화, 이전 대화 기억
 ![Demo](https://github.com/Han1236/plant_team_project/raw/feature/chat_memory/demo/데모영상_2.gif)
 
+---
+<br><br><br><br><br>
 
-
-
-
-
-
-
-
-
+---
 🔹 다른 영상 선택 후 DB에 자막 저장, ChromaDB 중복 생성 방지, 챗봇 대화
 ![Demo](https://github.com/Han1236/plant_team_project/raw/feature/chat_memory/demo/데모영상_3.gif)
+
+---
