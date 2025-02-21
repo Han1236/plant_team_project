@@ -3,16 +3,32 @@ set -e
 
 echo "===== PostgreSQL 초기 설정 실행 중 ====="
 
-psql -U postgres -c "CREATE DATABASE mydatabase;"
-psql -U postgres -c "ALTER USER postgres WITH PASSWORD 'mypassword';"
-
-echo "===== 초기 데이터 입력 ====="
-psql -U postgres -d mydatabase -c "
-    CREATE TABLE users (
+#!/bin/bash
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+    CREATE TABLE IF NOT EXISTS videos (
         id SERIAL PRIMARY KEY,
-        name VARCHAR(100) NOT NULL,
-        email VARCHAR(100) UNIQUE NOT NULL
+        video_id VARCHAR(255) UNIQUE NOT NULL,
+        title TEXT,
+        channel TEXT,
+        upload_date DATE,
+        duration INTEGER,
+        view_count BIGINT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
-"
+
+    CREATE TABLE IF NOT EXISTS subtitles (
+        id SERIAL PRIMARY KEY,
+        video_id VARCHAR(255) NOT NULL,
+        start_time FLOAT NOT NULL,
+        end_time FLOAT NOT NULL,
+        subtitle_text TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT fk_video
+            FOREIGN KEY (video_id)
+            REFERENCES videos(video_id)
+            ON DELETE CASCADE
+    );
+EOSQL
+
 
 echo "===== PostgreSQL 초기 설정 완료 ====="

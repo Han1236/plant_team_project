@@ -7,9 +7,13 @@ services:
       - "8000:8000"
     environment:
       - MODEL_SERVER_URL=http://model-server:8001
+      - DATABASE_URL=postgresql+asyncpg://postgres:mypassword@db:5432/mydatabase
+      - CHROMADB_URL=http://chromadb:8000
+      - MODEL_SERVER_URL=http://model-server:8001
     depends_on:
       - model-server
       - db
+      - chromadb
     networks:
       - app-network
 
@@ -19,6 +23,7 @@ services:
     container_name: model-server
     environment:
       - GOOGLE_API_KEY=${GOOGLE_API_KEY} # .env 파일에서 GOOGLE_API_KEY 로드
+      - CHROMADB_URL=http://chromadb:8000
     ports:
       - "8001:8001"
     networks:
@@ -53,8 +58,20 @@ services:
     networks:
       - app-network
 
+  chromadb:
+    image: chromadb/chroma
+    container_name: chromadb
+    restart: always
+    ports:
+      - "8002:8000"
+    volumes:
+      - chroma_data:/chroma
+    networks:
+      - app-network
+
 volumes:
   pgdata:
+  chroma_data:
 
 networks:
   app-network:
