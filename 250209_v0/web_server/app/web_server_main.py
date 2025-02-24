@@ -1,10 +1,13 @@
 # web-server/app/web-server.py
 from typing import Union, List, Dict
 from fastapi import FastAPI, HTTPException, Depends, File, UploadFile
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import requests
 import os
 import httpx
+import asyncio
+import json
 
 # 기존 video_utils.py 함수 임포트 (영상 정보, 자막 처리)
 from video_utils import (
@@ -64,6 +67,10 @@ class VideoRequest(BaseModel):
 
 class TextRequest(BaseModel):
     prompt: str
+
+class ChatHistoryRequest(BaseModel):
+    prompt: str
+    video_id: str
 
 class QnARequest(BaseModel):
     prompt: str
@@ -180,18 +187,35 @@ def summarize(request: TextRequest):
     except requests.RequestException as e:
         raise HTTPException(status_code=502, detail=str(e))
 
-# 엔드포인트: 챗 요청 (모델 서버 호출)
-@app.post("/chat")
-def qna(request: QnARequest):
+# 엔드포인트: 스트리밍 챗 요청 (모델 서버 호출)
+@app.post("/chat/stream")
+async def chat_stream(req: ChatHistoryRequest):
+    """QnA 스트리밍 요청 처리."""
     try:
-        payload = {"prompt": request.prompt, "video_id": request.video_id}
-        response = requests.post(f"{MODEL_SERVER_URL}/chat", json=payload, timeout=60)
-        response.raise_for_status()
-        return response.json()
-    except requests.RequestException as e:
-        raise HTTPException(status_code=502, detail=str(e))
+        async def generate():
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                async with client.stream(
+                    "POST",
+                    f"{MODEL_SERVER_URL}/chat/stream",
+                    json={"prompt": req.prompt, "video_id": req.video_id},
+                    headers={"Accept": "text/event-stream"}
+                ) as response:
+                    async for line in response.aiter_lines():
+                        if line:
+                            yield f"{line}\n\n"
+
+        return StreamingResponse(
+            generate(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no"
+            }
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+        print(f"Error in /chat/stream endpoint: {type(e).__name__} - {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Chat streaming error: {str(e)}")
 
 # 엔드포인트: ChromaDB 관련 프록시 (모델 서버의 create_chromadb 호출)
 @app.post("/create_chromadb")

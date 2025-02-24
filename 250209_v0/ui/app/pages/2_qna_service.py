@@ -25,13 +25,28 @@ def get_qna_response_from_api(prompt, video_id):
         "prompt": prompt,
         "video_id": video_id
     }
-    # 스트리밍 제거, requests 사용
-    response = requests.post(f"{WEB_SERVER_URL}/chat", json=payload)
-    if response.status_code == 200:
-        return response.json()['answer'] # answer 반환
-    else:
-        st.error("QnA 답변을 받아오는데 실패했습니다.")
-        return "QnA 오류"  # 에러메시지
+    
+    try:
+        with requests.post(
+            f"{WEB_SERVER_URL}/chat/stream",
+            json=payload,
+            stream=True,
+            headers={"Accept": "text/event-stream"}
+        ) as response:
+            if response.status_code == 200:
+                for line in response.iter_lines(decode_unicode=True):
+                    if line:
+                        if line.startswith('data: '):
+                            text = line[6:]  # 'data: ' 제거
+                            if text == '[DONE]':
+                                break
+                            yield text
+            else:
+                st.error("QnA 답변을 받아오는데 실패했습니다.")
+                yield "QnA 오류"
+    except Exception as e:
+        st.error(f"스트리밍 처리 중 오류 발생: {str(e)}")
+        yield f"오류: {str(e)}"
 
 
 def get_chromadb_video_list_from_api():
@@ -78,11 +93,15 @@ else:
             with st.spinner("메시지 처리 중입니다."):
                 placeholder = st.empty()
                 video_id = st.session_state["current_video_id"]
-                response = get_qna_response_from_api(prompt, video_id)
                 
-                # API 응답을 받은 후 session_state에 추가
-                # st.markdown(response)  # 응답 출력
-                st.session_state.messages.append({"role": "assistant", "content": response})  # 세션에 응답 저장
-                placeholder.empty()
+                # 스트리밍 응답 처리
+                full_response = ""
+                for response_chunk in get_qna_response_from_api(prompt, video_id):
+                    full_response += response_chunk
+                    placeholder.markdown(full_response + "▌")
+                placeholder.markdown(full_response)
+                
+                # 최종 응답을 세션에 저장
+                st.session_state.messages.append({"role": "assistant", "content": full_response})
 
         st.rerun()
