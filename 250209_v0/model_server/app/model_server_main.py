@@ -15,6 +15,7 @@ from langchain_community.chat_message_histories import ChatMessageHistory
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough, RunnableLambda
+from langchain_core.output_parsers import StrOutputParser
 from operator import itemgetter
 
 # rag_utils.py 임포트
@@ -44,7 +45,8 @@ chromadb_list: List[Dict] = []
 
 # ==== 데이터 모델 ====
 class SummarizeRequest(BaseModel):
-    text: str
+    timeline: str
+    subtitle: str
 
 class SummarizeResponse(BaseModel):
     summary: str
@@ -67,25 +69,44 @@ class CreateChromaDBResponse(BaseModel):
     message: str = ""
 
 # ==== LangChain + Gemini 함수 ====
-def gen_text(prompt: str) -> str:
-    model = ChatGoogleGenerativeAI(
-        model="gemini-2.0-flash-exp", temperature=0.7
-    )
-    chatprompt = ChatPromptTemplate.from_messages(
-        [
-            (
-                "system",
-                """Youtube 영상 자막 내용입니다.
-            이 내용을 보기 좋고 이해하기 쉽게 요약해주세요.
-            주제를 제목으로 하여 가장 위에 배치하고,
-            요약본은 전체적으로 마크다운 형식으로 작성해주세요.""",
-            ),
-            ("human", "{input}"),
-        ]
-    )
-    chain = chatprompt | model
-    response = chain.invoke({"input": prompt})
-    return response.content
+def gen_text(req: SummarizeRequest) -> str:
+    try:
+        model = ChatGoogleGenerativeAI(
+            model="gemini-2.0-flash", 
+            temperature=0.7
+        )
+        
+        system_prompt = f"""당신은 YouTube 영상의 자막과 타임라인을 분석하여 구조화된 요약을 제공하는 전문가입니다.
+        
+        다음 규칙을 따라 요약을 작성해주세요:
+        1. 전체 영상의 주제를 대표하는 제목을 ## 형식으로 작성하세요.
+        2. 전체 내용에 대한 간단한 소개를 작성하세요.
+        3. 타임라인의 각 구간별로 다음 형식으로 요약하세요:
+        ### 적절한 이모티콘, 수정한 제목 (제목만 표시, 시간 표시하지 말 것, 구간 제목을 참고해서 내용을 정리하고 이를 근거로 제목 수정)
+        - 핵심 내용 요약 (bullet points)
+        - 구체적인 내용 설명(중요한 키워드에는 ** 표시해서 강조해주세요.
+        - 구간 별 중간 요약으로 한줄 정리
+        - 중요한 키워드나 개념 설명
+        4. 마지막에 전체 내용의 핵심 포인트를 3줄로 정리해주세요.
+        
+        타임라인 정보:
+        {req.timeline}
+        
+        자막 내용:
+        {req.subtitle}
+        """
+        
+        chatprompt = ChatPromptTemplate.from_messages([
+            ("system", system_prompt),
+            ("human", "위 내용을 요약해주세요.")
+        ])
+        
+        chain = chatprompt | model | StrOutputParser()
+        response = chain.invoke({})  # 프롬프트에 이미 모든 정보가 포함됨
+        return response
+    except Exception as e:
+        print(f"Error in gen_text: {str(e)}")  # 로깅 추가
+        raise e
 
 
 async def get_rag_response_stream(prompt: str, video_id: str) -> AsyncGenerator[str, None]:
@@ -142,9 +163,11 @@ def health_check():
 @app.post("/summarize", response_model=SummarizeResponse)
 def summarize(req: SummarizeRequest):
     try:
-        summarized_text = gen_text(req.text)
+        summarized_text = gen_text(req)
         return SummarizeResponse(summary=summarized_text)
     except Exception as e:
+        print(f"Error in summarize: {str(e)}")  # 로깅 추가
+        print(f"Request data: {req}")  # 요청 데이터 로깅
         raise HTTPException(status_code=500, detail=f"Summarize error: {str(e)}")
 
 @app.post("/chat/stream")

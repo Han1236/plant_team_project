@@ -180,7 +180,18 @@ async def get_video_info(request: VideoRequest, db: AsyncSession = Depends(get_d
 @app.post("/summarize")
 def summarize(request: TextRequest):
     try:
-        payload = {"text": request.prompt}
+        # 타임라인과 자막 정보를 분리
+        data = json.loads(request.prompt)
+        timeline = data.get("timeline", "타임라인 정보가 없습니다.")
+        subtitle = data.get("subtitle", "")
+
+        # 요약 요청 페이로드 구성
+        payload = {
+            "timeline": timeline,
+            "subtitle": subtitle
+        }
+
+        # payload = {"text": request.prompt}
         response = requests.post(f"{MODEL_SERVER_URL}/summarize", json=payload, timeout=30)
         response.raise_for_status()
         return response.json()

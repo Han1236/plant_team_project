@@ -13,7 +13,7 @@ memory = ConversationBufferMemory(
 )
 
 # --- 모델 및 프롬프트 설정 ---
-llm_translate = ChatGoogleGenerativeAI(model="gemini-2.0-flash-001")
+llm_translate = ChatGoogleGenerativeAI(model="gemini-2.0-flash")
 translate_prompt = ChatPromptTemplate(
     [
         ("system", "Only translate"),  # 시스템 프롬프트: '번역만 수행'
@@ -34,7 +34,7 @@ qa_prompt = ChatPromptTemplate(
 )
 
 # QnA 모델 설정 (스트리밍을 지원하는 모델)
-llm_qa = ChatGoogleGenerativeAI(model="gemini-2.0-flash-001", streaming=True)
+llm_qa = ChatGoogleGenerativeAI(model="gemini-2.0-flash", streaming=True)
 
 # 임베딩 모델 설정
 embeddings_model = GoogleGenerativeAIEmbeddings(model="models/text-embedding-004")

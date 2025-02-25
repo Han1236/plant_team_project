@@ -2,6 +2,7 @@ import streamlit as st
 import requests
 import datetime
 import os
+import json
 
 # --- UI 설정 ---
 st.set_page_config(
@@ -34,8 +35,15 @@ def get_video_info(video_url):
         st.error("영상 정보 또는 자막 다운로드에 실패했습니다.")
         return None
 
-def summarize_with_api(transcript_text):
-    response = requests.post(f"{WEB_SERVER_URL}/summarize", json={"prompt": transcript_text})
+def summarize_with_api(transcript_text, timeline_text):
+    # 요청 데이터 구성
+    request_data = {
+        "prompt": json.dumps({
+            "timeline": timeline_text,
+            "subtitle": transcript_text
+        })
+    }
+    response = requests.post(f"{WEB_SERVER_URL}/summarize", json=request_data)
     if response.status_code == 200:
         return response.json().get("summary")
     else:
@@ -187,5 +195,5 @@ if video_url:
         if st.checkbox("요약 보기"):
             st.subheader(":cherry_blossom: 요약 결과 :cherry_blossom:")
             with st.spinner("자막을 요약중입니다. 잠시 기다려주세요..."):
-                summary = summarize_with_api(subtitle) # 웹 서버 요약 API 호출
+                summary = summarize_with_api(subtitle, timeline) # 웹 서버 요약 API 호출
             st.markdown(summary)
