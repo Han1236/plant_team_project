@@ -1,9 +1,14 @@
 import streamlit as st
+from components import header, footer
 
 st.set_page_config(
     page_title="Hello",
     page_icon="👋",
+    layout="wide"
 )
+
+# 헤더 컴포넌트 로드
+# header.show_header()
 
 st.write("# Welcome! 👋")
 
@@ -30,3 +35,6 @@ st.write("""
 - 빠르고 정확한 자막 요약.
 - 유저 맞춤형 질문에 대한 실시간 답변 제공.
 """)
+
+# 푸터 컴포넌트 로드
+footer.show_footer()
