@@ -8,12 +8,14 @@ def youtube_url_input():
     url = st.text_input(
         "YouTube URL",
         placeholder="Youtube 영상 URL을 입력하세요:(https://www.youtube.com/watch?v=...)",
-        value=st.session_state['video_url']
+        key="video_url"
     )
     
-    submit_button = st.button("정보 가져오기")
+    # submit_button = st.button("정보 가져오기")
     
-    if submit_button and url:
+    # if submit_button and url:
+    
+    if url:
         with st.spinner("YouTube 자막 및 정보를 가져오는 중..."):
             # API를 통해 비디오 정보 가져오기
             video_info = get_video_info(url)

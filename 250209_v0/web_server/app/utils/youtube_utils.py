@@ -80,7 +80,7 @@ def generate_markdown_timeline(chapters):
     """
     if not chapters:
         return "타임라인 정보가 없습니다."
-    markdown_text = "#### 영상 타임라인\n"
+    markdown_text = "\n"
     for ch in chapters:
         start_time = f"{int(ch['start_time']) // 60}:{int(ch['start_time']) % 60:02d}"
         end_time = f"{int(ch['end_time']) // 60}:{int(ch['end_time']) % 60:02d}"

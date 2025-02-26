@@ -2,6 +2,7 @@ import streamlit as st
 from components import video_input
 # from utils.api import get_video_info
 from utils.formatters import format_subtitle
+from utils.api import summarize_with_api
 import requests
 from config import API_ENDPOINTS
 import os
@@ -22,6 +23,10 @@ if 'db_created' not in st.session_state:
 # 비디오 URL 변수 초기화
 if 'video_url' not in st.session_state:
     st.session_state['video_url'] = ""
+
+# 이전 URL을 저장할 변수 추가
+if "prev_video_url" not in st.session_state:
+    st.session_state["prev_video_url"] = ""
 
 # 슈카월드 플레이리스트 표시
 def display_video_list(playlist_url):
@@ -123,7 +128,13 @@ video_loaded = video_input.youtube_url_input()
 # # 유튜브 비디오 URL 입력
 # video_url = st.text_input("Youtube 영상 URL을 입력하세요:", value=st.session_state['video_url'])
 
-# 비디오 정보가 로드되었으면 자막과 타임라인 표시
+# 새로운 비디오가 로드될 때 요약 초기화
+if st.session_state["video_url"] != st.session_state["prev_video_url"]:
+    st.session_state.summary = ""  # 요약 초기화
+    st.session_state["prev_video_url"] = st.session_state["video_url"]  # 현재 URL 저장
+
+
+# 비디오 정보가 로드되었으면 자막과 타임라인, 요약 탭 표시
 if video_loaded or "video_info" in st.session_state:
     video_info = st.session_state.video_info
     video_url = st.session_state.video_url
@@ -138,29 +149,44 @@ if video_loaded or "video_info" in st.session_state:
     subtitle = video_info.get("subtitle")
     
     # 영상 정보 표시
-    st.header(f"📺 {title}")
+    st.subheader(f"📺 {title}")
     
-    # 탭 생성
-    tab1, tab2 = st.tabs(["자막", "영상정보"])
+    # 탭 생성 - 요약 탭 추가
+    tab1, tab2, tab3 = st.tabs(["자막", "영상정보", "요약"])
     
     with tab1:
-        st.subheader("📄 자막")
+        st.markdown("#### 📄 자막")
         subtitle = format_subtitle(subtitle)
         st.text_area("자막 내용", subtitle, height=400, label_visibility="collapsed")
         
-        # 자막 저장 버튼
-        if st.button("자막 저장하기"):
-            st.session_state.subtitle = subtitle
-            st.success("자막이 저장되었습니다! 요약 페이지로 이동하여 요약을 생성할 수 있습니다.")
+        # ChromaDB 생성 버튼
+        if st.button("ChromaDB 생성", disabled=st.session_state['db_created']):
+            with st.spinner("ChromaDB를 생성 중입니다..."):
+                response = requests.post(
+                    API_ENDPOINTS["create_chromadb"], 
+                    json={
+                        "video_id": video_id, 
+                        "title": title, 
+                        "subtitle": subtitle
+                    }
+                )
+                
+                if response.status_code == 200:
+                    res = response.json()
+                    st.session_state['db_created'] = True
+                    st.success(f"{res['message']}")
+                else:
+                    st.info("ChromaDB 생성 실패.")
+                    st.session_state['db_created'] = False
     
     with tab2:
         col1, col2 = st.columns([1, 1])
         with col1:
-            st.subheader("📷 영상 정보")
+            st.markdown("#### 📷 영상 정보")
             st.markdown(f"""
-                        #### 제목:
+                        ##### 제목:
                         :blue-background[**{title}**]
-                        #### 입력된 Youtube URL:
+                        ##### 입력된 Youtube URL:
                         {video_url}
                         ##### 채널: {channel} | 조회수: **{view_count}** 회
                         ##### 업로드날짜: {upload_date}
@@ -168,31 +194,18 @@ if video_loaded or "video_info" in st.session_state:
                         """)
 
         with col2:
-            st.subheader("⏱️ 타임라인")
+            st.markdown("#### ⏱️ 타임라인")
             timeline = video_info.get("timeline", "타임라인 정보가 없습니다.")
             st.markdown(timeline)
-            
-            # 타임라인 저장 버튼
-            if st.button("타임라인 저장하기"):
-                st.session_state.timeline = timeline
-                st.success("타임라인이 저장되었습니다!")
     
-    # ChromaDB 생성 버튼
-    if st.button("ChromaDB 생성", disabled=st.session_state['db_created']):
-        with st.spinner("ChromaDB를 생성 중입니다..."):
-            response = requests.post(
-                API_ENDPOINTS["create_chromadb"], 
-                json={
-                    "video_id": video_id, 
-                    "title": title, 
-                    "subtitle": subtitle
-                }
-            )
-            
-            if response.status_code == 200:
-                res = response.json()
-                st.session_state['db_created'] = True
-                st.success(f"{res['message']}")
-            else:
-                st.info("ChromaDB 생성 실패.")
-                st.session_state['db_created'] = False
+    with tab3:
+        st.markdown("#### 📝 영상 요약")
+        
+        # session_state에서 요약 결과 확인
+        if "summary" not in st.session_state or not st.session_state.summary:
+            with st.spinner("영상을 요약 중입니다..."):
+                st.session_state.summary = summarize_with_api(subtitle, timeline)
+
+        # 요약 결과 표시
+        if st.session_state.summary:
+            st.markdown(st.session_state.summary)
