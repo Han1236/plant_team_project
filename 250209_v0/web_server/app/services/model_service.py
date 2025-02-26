@@ -22,12 +22,12 @@ def summarize_text(timeline: str, subtitle: str):
     except requests.RequestException as e:
         raise HTTPException(status_code=502, detail=str(e))
     
-async def stream_chat(prompt: str, video_id: str):
+async def stream_chat(query: str, video_id: str):
     """모델과의 스트리밍 채팅을 처리합니다."""
     try:
         # 요청 페이로드 구성
         payload = {
-            "prompt": prompt,
+            "query": query,
             "video_id": video_id
         }
 

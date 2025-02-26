@@ -8,7 +8,7 @@ class VideoRequest(BaseModel):
 #     playlist_url: str
 
 class TextRequest(BaseModel):
-    prompt: str
+    summary_info: str
 
 class ChromaDBRequest(BaseModel):
     video_id: str
@@ -16,7 +16,7 @@ class ChromaDBRequest(BaseModel):
     subtitle: str
 
 class QnARequest(BaseModel):
-    prompt: str
+    query: str
     video_id: str
 
 class PlaylistRequest(BaseModel):

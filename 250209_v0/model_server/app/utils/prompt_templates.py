@@ -1,11 +1,37 @@
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 # QnA 프롬프트 템플릿
+# qa_prompt = ChatPromptTemplate([
+#     ("system", "Please answer in Korean. Answer any user questions based solely on the context below, and consider the conversation history."),
+#     MessagesPlaceholder(variable_name="chat_history"),
+#     ("human", "<context>\n{context}\n</context>"),
+#     ("human", "{input}")
+# ])
+
 qa_prompt = ChatPromptTemplate([
-    ("system", "Please answer in Korean. Answer any user questions based solely on the context below, and consider the conversation history."),
+    # 시스템 역할 정의
+    ("system", """당신은 YouTube 영상의 내용을 분석하여 질문에 대한 답변을 제공하는 AI입니다. 
+    다음 규칙을 철저히 따르세요:
+    
+    1. 답변은 반드시 한국어로 작성하세요.
+    2. 질문에 대한 답변은 아래 제공된 컨텍스트(영상 정보)만을 기반으로 하세요.
+    3. 사용자가 질문을 이해하기 쉽도록 중요 키워드는 강조(**) 표시하세요.
+    4. 너무 짧거나 단답형으로 답하지 말고, 충분한 정보를 포함하여 자연스럽게 설명하세요.
+    5. 불확실한 내용이 있다면 추측하지 말고 '해당 정보는 영상에 없습니다'라고 답변하세요.
+    """),
+
+    # 대화 히스토리 (과거 대화 내용 고려)
     MessagesPlaceholder(variable_name="chat_history"),
-    ("human", "<context>\n{context}\n</context>"),
-    ("human", "{input}")
+
+    # 컨텍스트 정보 제공
+    ("human", """
+    <context>
+    {context}
+    </context>
+
+    사용자 질문: 
+    {input}
+    """)
 ])
 
 def get_summarize_prompt(timeline, subtitle):

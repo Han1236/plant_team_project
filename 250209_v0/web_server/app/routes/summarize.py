@@ -10,7 +10,7 @@ def summarize(request: TextRequest):
     """텍스트 요약을 처리합니다."""
     try:
         # 타임라인과 자막 정보를 분리
-        data = json.loads(request.prompt)
+        data = json.loads(request.summary_info)
         timeline = data.get("timeline", "타임라인 정보가 없습니다.")
         subtitle = data.get("subtitle", "")
 

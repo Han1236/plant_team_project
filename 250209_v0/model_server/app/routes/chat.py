@@ -12,7 +12,7 @@ async def chat_stream(req: ChatHistoryRequest):
     try:
         # 응답 스트림 변환 및 반환
         async def convert_to_sse():
-            async for chunk in get_rag_response_stream(req.prompt, req.video_id):
+            async for chunk in get_rag_response_stream(req.query, req.video_id):
                 yield f"data: {chunk}\n\n"
             yield "data: [DONE]\n\n"
         

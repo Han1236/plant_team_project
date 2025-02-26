@@ -5,7 +5,7 @@ class SummarizeRequest(BaseModel):
     subtitle: str
 
 class ChatHistoryRequest(BaseModel):
-    prompt: str
+    query: str
     video_id: str
 
 class CreateChromaDBRequest(BaseModel):

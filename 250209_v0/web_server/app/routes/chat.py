@@ -5,6 +5,9 @@ from services.model_service import stream_chat
 import json
 import traceback
 import asyncio
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Chat"])
 
@@ -12,14 +15,12 @@ router = APIRouter(tags=["Chat"])
 async def chat_stream(request: QnARequest):
     """모델과의 스트리밍 채팅을 처리합니다."""
     try:
-        # JSON 문자열에서 데이터 추출
-        data = json.loads(request.prompt)
-        prompt = data.get("prompt", "")
-        video_id = data.get("video_id", "")
+        if not request.query:
+            raise HTTPException(status_code=400, detail="Query is required.")
         
-        # 스트리밍 응답 반환
+        # 직접 prompt와 video_id 사용
         return StreamingResponse(
-            stream_chat(prompt, video_id),
+            stream_chat(request.query, request.video_id),
             media_type="text/event-stream",
             headers={
                 "Cache-Control": "no-cache",
@@ -28,8 +29,8 @@ async def chat_stream(request: QnARequest):
             }
         )
     except Exception as e:
-        print(f"스트리밍 채팅 오류: {str(e)}")
-        print(traceback.format_exc())
+        logger.error(f"스트리밍 채팅 오류: {str(e)}")
+        logger.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
     
     # try:

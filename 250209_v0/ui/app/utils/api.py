@@ -39,25 +39,40 @@ def summarize_with_api(transcript_text, timeline_text):
     except Exception as e:
         return f"요약에 실패했습니다. 오류: {str(e)}"
 
-def chat_stream_with_api(prompt, video_id, streaming=True):
+def chat_stream_with_api(query, video_id):
     """모델과 채팅합니다."""
     request_data = {
-            "prompt": json.dumps({
-                "prompt": prompt,
-                "video_id": video_id
-            })
-        }
+        "query": query,
+        "video_id": video_id
+    }
+    
+    print(f"Sending request data: {request_data}")  # 디버깅용 로그
     
     endpoint = API_ENDPOINTS["chat_stream"]
     with requests.post(endpoint, json=request_data, stream=True) as response:
+        print(f"Response status: {response.status_code}")  # 디버깅용 로그
         if response.status_code == 200:
             # SSE 형식으로 응답 처리
             for line in response.iter_lines():
                 if line:
                     line = line.decode('utf-8')
                     if line.startswith('data:'):
-                        data = line[5:]
-                        if data != "[DONE]":  # 스트림 종료 표시가 아니면 데이터 반환
-                            yield data
+                        data = line[6:] # 'data: ' 제거
+                        if data == "[DONE]":  # 스트림 종료 표시가 아니면 데이터 반환
+                            break
+                        yield data
+                    
         else:
-            yield f"응답 실패. 오류: {response.status_code}"
+            error_detail = response.json().get("detail", "Unknown error")
+            print(f"Error response: {error_detail}")  # 디버깅용 로그
+            yield f"응답 실패. 오류: {response.status_code} - {error_detail}"
+
+def get_chromadb_video_list():
+    """ChromaDB에서 영상 목록을 가져오는 함수"""
+    try:
+        response = requests.get(API_ENDPOINTS["chromadb_videos"])
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as e:
+        # st.error(f"ChromaDB 목록을 가져오는 데 실패했습니다: {e}")
+        return []
