@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from routes import youtube, summarize, chat, chromadb
 import os
 from dotenv import load_dotenv
+from models.database import engine, Base
 
 # 환경 변수 로드
 load_dotenv()
@@ -19,6 +20,12 @@ app.include_router(chromadb.router)
 @app.get("/health")
 def health_check():
     return {"status": "ok", "message": "web_server is running"}
+
+@app.on_event("startup")
+async def startup():
+    # 데이터베이스 테이블 생성
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
 
 if __name__ == "__main__":
     import uvicorn
