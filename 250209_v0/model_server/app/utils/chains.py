@@ -4,6 +4,7 @@ from langchain_core.runnables import RunnablePassthrough, RunnableWithMessageHis
 from operator import itemgetter
 from utils.prompt_templates import qa_prompt
 from langchain_core.messages import HumanMessage, AIMessage
+from utils.text_utils import translate_text
 import logging
 
 logger = logging.getLogger(__name__)
@@ -16,7 +17,7 @@ def create_stuff_documents_chain(llm):
     chain = (
         {
             "context": lambda x: format_docs(x["context"]),
-            "chat_history": itemgetter("chat_history"),  # 직접 chat_history 사용
+            "chat_history": itemgetter("chat_history"),
             "input": itemgetter("input")
         }
         | qa_prompt
@@ -28,11 +29,24 @@ def create_stuff_documents_chain(llm):
 
 def create_retrieval_chain(retriever, combine_docs_chain, memory_store):
     """LCEL을 사용하여 검색 기반 질의응답 체인을 생성합니다."""
+    def split_query(input_dict):
+        """쿼리를 번역하여 리트리버용과 메모리용으로 분리"""
+        original_query = input_dict["input"]
+        translated_query = translate_text(original_query)
+        return {
+            "retriever_query": translated_query,
+            "memory_query": original_query,
+            "chat_history": input_dict.get("chat_history", [])
+        }
+
     base_chain = (
-        {
-            "context": itemgetter("input") | retriever,
-            "chat_history": itemgetter("chat_history"),
-            "input": itemgetter("input")
+        RunnablePassthrough.assign(
+            split_query=split_query
+        )
+        | {
+            "context": lambda x: retriever.get_relevant_documents(x["split_query"]["retriever_query"]),
+            "chat_history": lambda x: x["split_query"]["chat_history"],
+            "input": lambda x: x["split_query"]["memory_query"]  # 원본 한글 쿼리 사용
         }
         | combine_docs_chain
     )

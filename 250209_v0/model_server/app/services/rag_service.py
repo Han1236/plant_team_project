@@ -61,17 +61,15 @@ async def get_rag_response_stream(query: str, video_id: str) -> AsyncGenerator[s
             get_message_history
         )
 
-        translated_query = translate_text(query)
-        logger.info(f"번역된 질문: {translated_query}")
-        
         try:
             logger.info("스트리밍 응답 시작")
             
             # config에 session_id 추가
             config = {"configurable": {"session_id": video_id}}
+            # 원본 쿼리를 그대로 전달
             async for chunk in retrieval_chain.astream(
-                {"input": translated_query},
-                config=config  # config 파라미터로 전달
+                {"input": query},  # 번역하지 않은 원본 쿼리 사용
+                config=config
             ):
                 if chunk:
                     logger.info(f"전송할 content: {chunk}")
