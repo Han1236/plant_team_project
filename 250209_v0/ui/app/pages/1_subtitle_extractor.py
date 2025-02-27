@@ -25,17 +25,11 @@ if 'prev_video_url' not in st.session_state:
 if 'video_info' not in st.session_state:
     st.session_state['video_info'] = None
 
-if 'summary' not in st.session_state:
-    st.session_state['summary'] = None
+if 'summaries' not in st.session_state:
+    st.session_state['summaries'] = {}  # URL별 요약을 저장할 딕셔너리
 
 if 'db_created' not in st.session_state:
     st.session_state['db_created'] = False
-
-# URL이 변경되면 이전 URL 저장하고 상태 초기화
-if st.session_state['video_url'] != "":  # URL이 있을 때만
-    if st.session_state['video_url'] != st.session_state['prev_video_url']:
-        st.session_state['prev_video_url'] = st.session_state['video_url']
-        st.session_state['summary'] = None  # 새 영상이 로드될 때 요약 초기화
 
 # 슈카월드 플레이리스트 표시
 def display_video_list(playlist_url):
@@ -182,13 +176,15 @@ if video_loaded or (st.session_state.video_info is not None):
         with tab3:
             st.markdown("#### 📝 영상 요약")
             
-            # 요약이 없을 때만 새로 요약 실행
-            if "summary" not in st.session_state or not st.session_state.summary:
+            current_url = st.session_state['video_url']
+            
+            # 현재 URL에 대한 요약이 없을 때만 새로 요약 실행
+            if current_url not in st.session_state['summaries']:
                 with st.spinner("영상을 요약 중입니다..."):
                     summary = summarize_with_api(subtitle, timeline)
                     if summary:  # 요약이 성공적으로 생성된 경우에만 저장
-                        st.session_state.summary = summary
+                        st.session_state['summaries'][current_url] = summary
             
-            # 요약 결과 표시
-            if st.session_state.summary:
-                st.markdown(st.session_state.summary)
+            # 요약 결과 표시 (저장된 요약이 있으면 바로 표시)
+            if current_url in st.session_state['summaries']:
+                st.markdown(st.session_state['summaries'][current_url])

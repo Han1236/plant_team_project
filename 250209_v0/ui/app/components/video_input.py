@@ -15,11 +15,10 @@ def youtube_url_input():
     
     # URL이 입력되면 세션 상태 업데이트
     if video_url:
-        # URL이 변경되었을 때만 상태 초기화
+        # URL이 변경되었을 때만 상태 업데이트
         if video_url != st.session_state.get('prev_video_url', ''):
-            st.session_state['summary'] = None  # 요약 초기화
             st.session_state['prev_video_url'] = video_url  # 이전 URL 업데이트
-        
+            
         st.session_state['video_url'] = video_url
         
         with st.spinner("YouTube 자막 및 정보를 가져오는 중..."):
