@@ -8,20 +8,19 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 #     ("human", "{input}")
 # ])
 
-qa_prompt = ChatPromptTemplate([
+qa_prompt = ChatPromptTemplate.from_messages([
     # 시스템 역할 정의
     ("system", """당신은 YouTube 영상의 내용을 분석하여 질문에 대한 답변을 제공하는 AI입니다. 
     다음 규칙을 철저히 따르세요:
     
     1. 답변은 반드시 한국어로 작성하세요.
-    2. 질문에 대한 답변은 아래 제공된 컨텍스트(영상 정보)만을 기반으로 하세요.
-    3. 사용자가 질문을 이해하기 쉽도록 중요 키워드는 강조(**) 표시하세요.
-    4. 너무 짧거나 단답형으로 답하지 말고, 충분한 정보를 포함하여 자연스럽게 설명하세요.
-    5. 불확실한 내용이 있다면 추측하지 말고 '해당 정보는 영상에 없습니다'라고 답변하세요.
+    2. 영상 정보에 대한 질문에 대한 답변은 아래 제공된 컨텍스트(영상 정보)를 기반으로 하세요.
+    3. 너무 짧거나 단답형으로 답하지 말고, 충분한 정보를 포함하여 자연스럽게 설명하세요.
+    4. 불확실한 내용이 있다면 추측하지 말고 '해당 정보는 영상에 없습니다'라고 답변하세요.
     """),
 
     # 대화 히스토리 (과거 대화 내용 고려)
-    MessagesPlaceholder(variable_name="chat_history"),
+    MessagesPlaceholder(variable_name="chat_history"), # 이 곳에 대화 기록이 포함. 메모리의 chat_history키를 조회
 
     # 컨텍스트 정보 제공
     ("human", """
@@ -48,8 +47,8 @@ def get_summarize_prompt(timeline, subtitle):
     - 중요한 키워드에는 ** 표시해서 강조 (키워드에 특수문자가 포함된 경우는 ** 표시 제외)
     - 소제목 마다 중간 요약으로 한줄 정리
     4. 마지막에 전체 내용의 핵심 포인트를 3줄로 정리해주세요:
-    - ✅ 핵심 요약:
-    - 번호 붙여서 3줄 정리
+    #### ✅ 핵심 요약:
+    번호 붙여서 3줄 정리
     
     타임라인 정보:
     {timeline}

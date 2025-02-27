@@ -21,7 +21,7 @@ def summarize_with_api(transcript_text, timeline_text):
     """자막과 타임라인을 요약합니다."""
     try:
         request_data = {
-            "prompt": json.dumps({
+            "summary_info": json.dumps({
                 "timeline": timeline_text,
                 "subtitle": transcript_text
             })
@@ -56,11 +56,18 @@ def chat_stream_with_api(query, video_id):
             for line in response.iter_lines():
                 if line:
                     line = line.decode('utf-8')
+                    # print(f"[API] 받은 원본 라인: {line}")
                     if line.startswith('data:'):
                         data = line[6:] # 'data: ' 제거
                         if data == "[DONE]":  # 스트림 종료 표시가 아니면 데이터 반환
                             break
-                        yield data
+                        try:
+                            # JSON 디코딩하여 content 추출
+                            chunk_data = json.loads(data) # JSON -> 파이썬 객체 (자동으로 유니코드 디코딩)
+                            print(f"JSON 디코딩 content: {chunk_data}")
+                            yield chunk_data["content"]
+                        except json.JSONDecodeError:
+                            yield data
                     
         else:
             error_detail = response.json().get("detail", "Unknown error")

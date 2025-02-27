@@ -47,7 +47,7 @@ async def stream_chat(query: str, video_id: str):
                     if chunk:
                         yield chunk.decode('utf-8')
     except Exception as e:
-        yield f"data: 오류가 발생했습니다: {str(e)}\n\n"
+        yield f"data: 오류가 발생했습니다: {str(e)}"
 
 # async def chat_stream_with_model(prompt: str, video_id: str):
 #     """모델과의 스트리밍 채팅을 처리합니다."""

@@ -4,7 +4,6 @@ from utils.session import set_current_video
 
 def video_list_component():
     """QnA 가능한 영상 목록을 출력하는 UI 컴포넌트"""
-    # st.subheader("QnA 가능한 영상 목록")
 
     video_db_list = get_chromadb_video_list()
 

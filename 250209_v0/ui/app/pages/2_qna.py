@@ -14,10 +14,6 @@ st.write("""
 AI가 영상 내용을 기반으로 답변을 제공합니다.
 """)
 
-# # 채팅 기록 초기화
-# if "chat_history" not in st.session_state:
-#     st.session_state.chat_history = []
-
 # QnA 가능한 영상 목록 표시
 st.markdown("#### QnA 가능한 영상 목록")
 video_list_component()
@@ -47,10 +43,10 @@ else:
                 
                 # 스트리밍 응답 처리
                 full_response = ""
-                for response_chunk in chat_stream_with_api(query, video_id):
+                for response_chunk in chat_stream_with_api(query, video_id):                    
                     full_response += response_chunk
-                    placeholder.markdown(full_response + "▌")
-                placeholder.markdown(full_response)
+                    placeholder.markdown(full_response + "▌", unsafe_allow_html=True)
+                placeholder.markdown(full_response, unsafe_allow_html=True)
                 
                 # 최종 응답을 세션에 저장
                 st.session_state.messages.append({"role": "assistant", "content": full_response})

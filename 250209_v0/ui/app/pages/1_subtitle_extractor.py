@@ -1,6 +1,5 @@
 import streamlit as st
 from components import video_input
-# from utils.api import get_video_info
 from utils.formatters import format_subtitle
 from utils.api import summarize_with_api
 import requests
@@ -17,16 +16,26 @@ YouTube 영상의 URL을 입력하면 해당 영상의 자막을 추출하여 �
 """)
 
 # 세션 상태 초기화
-if 'db_created' not in st.session_state:
-    st.session_state['db_created'] = False
-
-# 비디오 URL 변수 초기화
 if 'video_url' not in st.session_state:
     st.session_state['video_url'] = ""
 
-# 이전 URL을 저장할 변수 추가
-if "prev_video_url" not in st.session_state:
-    st.session_state["prev_video_url"] = ""
+if 'prev_video_url' not in st.session_state:
+    st.session_state['prev_video_url'] = ""
+
+if 'video_info' not in st.session_state:
+    st.session_state['video_info'] = None
+
+if 'summary' not in st.session_state:
+    st.session_state['summary'] = None
+
+if 'db_created' not in st.session_state:
+    st.session_state['db_created'] = False
+
+# URL이 변경되면 이전 URL 저장하고 상태 초기화
+if st.session_state['video_url'] != "":  # URL이 있을 때만
+    if st.session_state['video_url'] != st.session_state['prev_video_url']:
+        st.session_state['prev_video_url'] = st.session_state['video_url']
+        st.session_state['summary'] = None  # 새 영상이 로드될 때 요약 초기화
 
 # 슈카월드 플레이리스트 표시
 def display_video_list(playlist_url):
@@ -83,24 +92,6 @@ def display_video_list(playlist_url):
                         </div>
                     </a>
                 """, unsafe_allow_html=True)
-
-                     
-                # <a href="{video_url}" target="_blank" style="text-decoration: none; color: inherit;">
-                #     <div style="border: 1px solid #ddd; border-radius: 5px; padding: 10px; margin-bottom: 10px;">
-                #         <div style="position: relative;">
-                #             <img src="{thumbnail_url}" style="width: 100%; border-radius: 5px;">
-                #             <div style="position: absolute; bottom: 5px; right: 5px; background-color: rgba(0, 0, 0, 0.7); color: white; padding: 2px 5px; border-radius: 3px; font-size: 12px;">
-                #                 {formatted_duration}
-                #             </div>
-                #         </div>
-                #         <div style="color: black; font-size: 15px; font-family: 'Noto Sans KR', sans-serif; margin-top: 5px;">
-                #             {title}
-                #         </div>
-                #         <div style="color: gray; font-size: 13px; font-family: 'Noto Sans KR', sans-serif; margin-top: 2px;">
-                #             조회수 {formatted_count}
-                #         </div>
-                #     </div>
-                # </a>
                 
                 # URL 자동입력 버튼
                 if col.button("URL 자동입력", key=f"copy_{i}"):
@@ -120,92 +111,84 @@ display_video_list(playlist_url)
 
 # 예시 URL 입력 버튼
 if st.button("예시 url 입력"):
-    st.session_state['video_url'] = "https://www.youtube.com/watch?v=2J8ORNpH3Uk"  # 예시 URL로 설정
+    st.session_state['video_url'] = "https://www.youtube.com/watch?v=2J8ORNpH3Uk"
 
 # 비디오 URL 입력 컴포넌트
 video_loaded = video_input.youtube_url_input()
 
-# # 유튜브 비디오 URL 입력
-# video_url = st.text_input("Youtube 영상 URL을 입력하세요:", value=st.session_state['video_url'])
-
-# 새로운 비디오가 로드될 때 요약 초기화
-if st.session_state["video_url"] != st.session_state["prev_video_url"]:
-    st.session_state.summary = ""  # 요약 초기화
-    st.session_state["prev_video_url"] = st.session_state["video_url"]  # 현재 URL 저장
-
-
-# 비디오 정보가 로드되었으면 자막과 타임라인, 요약 탭 표시
-if video_loaded or "video_info" in st.session_state:
+# 비디오 정보가 로드되었을 때만 처리
+if video_loaded or (st.session_state.video_info is not None):
     video_info = st.session_state.video_info
-    video_url = st.session_state.video_url
-
-    video_id = video_info.get("video_id")
-    title = video_info.get("title")
-    channel = video_info.get("channel")
-    view_count = video_info.get("view_count")
-    upload_date = video_info.get("upload_date")
-    duration = video_info.get("duration_string")
-    timeline = video_info.get("timeline")
-    subtitle = video_info.get("subtitle")
-    
-    # 영상 정보 표시
-    st.subheader(f"📺 {title}")
-    
-    # 탭 생성 - 요약 탭 추가
-    tab1, tab2, tab3 = st.tabs(["자막", "영상정보", "요약"])
-    
-    with tab1:
-        st.markdown("#### 📄 자막")
-        subtitle = format_subtitle(subtitle)
-        st.text_area("자막 내용", subtitle, height=400, label_visibility="collapsed")
+    if video_info:  # video_info가 None이 아닐 때만 처리
+        video_id = video_info.get("video_id")
+        title = video_info.get("title")
+        channel = video_info.get("channel")
+        view_count = video_info.get("view_count")
+        upload_date = video_info.get("upload_date")
+        duration = video_info.get("duration_string")
+        timeline = video_info.get("timeline")
+        subtitle = video_info.get("subtitle")
         
-        # ChromaDB 생성 버튼
-        if st.button("ChromaDB 생성", disabled=st.session_state['db_created']):
-            with st.spinner("ChromaDB를 생성 중입니다..."):
-                response = requests.post(
-                    API_ENDPOINTS["create_chromadb"], 
-                    json={
-                        "video_id": video_id, 
-                        "title": title, 
-                        "subtitle": subtitle
-                    }
-                )
-                
-                if response.status_code == 200:
-                    res = response.json()
-                    st.session_state['db_created'] = True
-                    st.success(f"{res['message']}")
-                else:
-                    st.info("ChromaDB 생성 실패.")
-                    st.session_state['db_created'] = False
-    
-    with tab2:
-        col1, col2 = st.columns([1, 1])
-        with col1:
-            st.markdown("#### 📷 영상 정보")
-            st.markdown(f"""
-                        ##### 제목:
-                        :blue-background[**{title}**]
-                        ##### 입력된 Youtube URL:
-                        {video_url}
-                        ##### 채널: {channel} | 조회수: **{view_count}** 회
-                        ##### 업로드날짜: {upload_date}
-                        ##### 영상 길이: {duration}
-                        """)
-
-        with col2:
-            st.markdown("#### ⏱️ 타임라인")
-            timeline = video_info.get("timeline", "타임라인 정보가 없습니다.")
-            st.markdown(timeline)
-    
-    with tab3:
-        st.markdown("#### 📝 영상 요약")
+        # 영상 정보 표시
+        st.subheader(f"📺 {title}")
         
-        # session_state에서 요약 결과 확인
-        if "summary" not in st.session_state or not st.session_state.summary:
-            with st.spinner("영상을 요약 중입니다..."):
-                st.session_state.summary = summarize_with_api(subtitle, timeline)
+        # 탭 생성 - 요약 탭 추가
+        tab1, tab2, tab3 = st.tabs(["자막", "영상정보", "요약"])
+        
+        with tab1:
+            st.markdown("#### 📄 자막")
+            subtitle = format_subtitle(subtitle)
+            st.text_area("자막 내용", subtitle, height=400, label_visibility="collapsed")
+            
+            # ChromaDB 생성 버튼
+            if st.button("ChromaDB 생성", disabled=st.session_state['db_created']):
+                with st.spinner("ChromaDB를 생성 중입니다..."):
+                    response = requests.post(
+                        API_ENDPOINTS["create_chromadb"], 
+                        json={
+                            "video_id": video_id, 
+                            "title": title, 
+                            "subtitle": subtitle
+                        }
+                    )
+                    
+                    if response.status_code == 200:
+                        res = response.json()
+                        st.session_state['db_created'] = True
+                        st.success(f"{res['message']}")
+                    else:
+                        st.info("ChromaDB 생성 실패.")
+                        st.session_state['db_created'] = False
+        
+        with tab2:
+            col1, col2 = st.columns([1, 1])
+            with col1:
+                st.markdown("#### 📷 영상 정보")
+                st.markdown(f"""
+                            ##### 제목:
+                            :blue-background[**{title}**]
+                            ##### 입력된 Youtube URL:
+                            {st.session_state.video_url}
+                            ##### 채널: {channel} | 조회수: **{view_count}** 회
+                            ##### 업로드날짜: {upload_date}
+                            ##### 영상 길이: {duration}
+                            """)
 
-        # 요약 결과 표시
-        if st.session_state.summary:
-            st.markdown(st.session_state.summary)
+            with col2:
+                st.markdown("#### ⏱️ 타임라인")
+                timeline = video_info.get("timeline", "타임라인 정보가 없습니다.")
+                st.markdown(timeline)
+        
+        with tab3:
+            st.markdown("#### 📝 영상 요약")
+            
+            # 요약이 없을 때만 새로 요약 실행
+            if "summary" not in st.session_state or not st.session_state.summary:
+                with st.spinner("영상을 요약 중입니다..."):
+                    summary = summarize_with_api(subtitle, timeline)
+                    if summary:  # 요약이 성공적으로 생성된 경우에만 저장
+                        st.session_state.summary = summary
+            
+            # 요약 결과 표시
+            if st.session_state.summary:
+                st.markdown(st.session_state.summary)
