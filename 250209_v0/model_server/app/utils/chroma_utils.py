@@ -64,10 +64,6 @@ def create_db_from_transcript(subtitle, video_id, embedding_model):
         print("자막이 없어 ChromaDB를 생성할 수 없습니다.") # 로그 출력
         return False # DB 생성 실패 시 False 반환
 
-# def create_retriever_from_db(chroma_vector_store, search_kwargs={'k': 5}):
-#     """DB에서 검색 Retriever를 생성합니다."""
-#     return chroma_vector_store.as_retriever(search_kwargs=search_kwargs)
-
 def split_text_into_documents(text, text_splitter):
     """텍스트를 문서로 분할합니다."""
     texts = text_splitter.split_text(text)

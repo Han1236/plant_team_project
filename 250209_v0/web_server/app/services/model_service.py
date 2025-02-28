@@ -1,5 +1,4 @@
 import requests
-import json
 import os
 from fastapi import HTTPException
 import aiohttp

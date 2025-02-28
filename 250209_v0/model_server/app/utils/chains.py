@@ -1,13 +1,8 @@
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough, RunnableWithMessageHistory
 from operator import itemgetter
 from utils.prompt_templates import qa_prompt
-from langchain_core.messages import HumanMessage, AIMessage
 from utils.text_utils import translate_text
-import logging
-
-logger = logging.getLogger(__name__)
 
 def create_stuff_documents_chain(llm):
     """LCEL을 사용하여 문서를 결합하는 체인을 생성합니다."""

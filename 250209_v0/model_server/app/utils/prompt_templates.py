@@ -1,13 +1,5 @@
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
-# QnA 프롬프트 템플릿
-# qa_prompt = ChatPromptTemplate([
-#     ("system", "Please answer in Korean. Answer any user questions based solely on the context below, and consider the conversation history."),
-#     MessagesPlaceholder(variable_name="chat_history"),
-#     ("human", "<context>\n{context}\n</context>"),
-#     ("human", "{input}")
-# ])
-
 qa_prompt = ChatPromptTemplate.from_messages([
     # 시스템 역할 정의
     ("system", """당신은 YouTube 영상의 내용을 분석하여 질문에 대한 답변을 제공하는 AI입니다. 

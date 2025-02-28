@@ -1,22 +1,11 @@
-from typing import AsyncGenerator, List, Dict, Any
+from typing import AsyncGenerator, Dict
 from utils.chroma_utils import load_chroma_db
-from utils.text_utils import translate_text
-# from utils.prompt_templates import qa_prompt
 from utils.llm_utils import create_llm, get_embeddings_model
-from langchain.chains.combine_documents import create_stuff_documents_chain
-from langchain.chains.retrieval import create_retrieval_chain
-# from langchain.memory import ConversationBufferMemory
-# from langchain_core.runnables import RunnablePassthrough, RunnableLambda
-# from operator import itemgetter
+from utils.chains import create_stuff_documents_chain, create_retrieval_chain
 from langchain.memory import ChatMessageHistory
-from langchain_core.runnables import RunnablePassthrough
 import os
 import traceback
-import asyncio
-from utils.chains import create_stuff_documents_chain, create_retrieval_chain
 import logging
-from langchain_core.messages import HumanMessage, AIMessage
-from langchain_core.output_parsers import StrOutputParser
 import json
 
 # 로그 설정
@@ -28,9 +17,6 @@ message_histories: Dict[str, ChatMessageHistory] = {}
 
 # QA 모델
 llm_qa = create_llm(model_name="gemini-2.0-flash", temperature=0.7, streaming=True)
-
-# 전역 변수로 대화 기록 저장
-# chat_histories: Dict[str, List] = {}
 
 def get_message_history(video_id: str):
     """video_id에 해당하는 메시지 히스토리를 가져옵니다."""
@@ -66,7 +52,7 @@ async def get_rag_response_stream(query: str, video_id: str) -> AsyncGenerator[s
             
             # config에 session_id 추가
             config = {"configurable": {"session_id": video_id}}
-            # 원본 쿼리를 그대로 전달
+
             async for chunk in retrieval_chain.astream(
                 {"input": query},  # 번역하지 않은 원본 쿼리 사용
                 config=config
