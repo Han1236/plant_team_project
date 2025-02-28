@@ -1,7 +1,6 @@
 import yt_dlp
 import os
 import re
-from typing import List, Dict, Any, Optional
 import datetime
 
 def get_video_info_and_subtitles(video_url: str):
@@ -87,33 +86,6 @@ def generate_markdown_timeline(chapters):
         markdown_text += f"**{start_time} ~ {end_time}**\n"
         markdown_text += f"{ch['title']}\n\n"
     return markdown_text
-
-# def get_videos_from_playlist(playlist_url, playlist_start, playlist_end):
-#     """
-#     yt-dlp를 사용하여 유튜브 플레이리스트에서 비디오 목록을 가져옵니다.
-#     """
-#     opts = {
-#         'quiet': True,  # 최소한의 로그만 출력
-#         'extract_flat': True,  # 비디오의 상세 정보를 추출하지만 다운로드하지 않음
-#         'playliststart': playlist_start,  # 플레이리스트에서 시작할 비디오 인덱스
-#         'playlistend': playlist_end,  # 플레이리스트에서 끝낼 비디오 인덱스
-#         'writethumbnail': False,  # 썸네일을 저장
-#         'download': False,  # 실제 비디오 다운로드하지 않음
-#     }
-
-#     with yt_dlp.YoutubeDL(opts) as ydl:
-#         # 플레이리스트 URL에서 비디오 정보 추출 (다운로드하지 않고 정보만 추출)
-#         info_dict = ydl.extract_info(playlist_url, download=False)
-
-#         # 추출된 비디오들에 대해 필요한 정보만 출력
-#         videos = info_dict.get('entries', [])
-
-#         if not videos:
-#             print("플레이리스트에서 비디오를 찾을 수 없습니다.")
-#             return []
-
-#         # 비디오 목록을 반환
-#         return videos
 
 def format_view_count(view_count: int):
     """

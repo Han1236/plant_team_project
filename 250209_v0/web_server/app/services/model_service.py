@@ -48,35 +48,3 @@ async def stream_chat(query: str, video_id: str):
                         yield chunk.decode('utf-8')
     except Exception as e:
         yield f"data: 오류가 발생했습니다: {str(e)}"
-
-# async def chat_stream_with_model(prompt: str, video_id: str):
-#     """모델과의 스트리밍 채팅을 처리합니다."""
-#     try:
-#         # 요청 페이로드 구성
-#         payload = {
-#             "prompt": prompt,
-#             "video_id": video_id
-#         }
-
-#         # 스트리밍 응답을 위한 비동기 요청
-#         async with aiohttp.ClientSession() as session:
-#             async with session.post(
-#                 f"{MODEL_SERVER_URL}/chat/stream", 
-#                 json=payload, 
-#                 timeout=60
-#             ) as response:
-#                 if response.status != 200:
-#                     error_text = await response.text()
-#                     raise HTTPException(status_code=response.status, detail=error_text)
-                
-#                 # 스트리밍 응답 처리
-#                 async for chunk in response.content.iter_any():
-#                     if chunk:
-#                         text = chunk.decode('utf-8')
-#                         if text.startswith('data: '):
-#                             text = text.replace('data: ', '', 1)
-#                             if text.strip() == '[DONE]':
-#                                 break
-#                             yield text
-#     except Exception as e:
-#         raise HTTPException(status_code=502, detail=str(e))

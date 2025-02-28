@@ -18,7 +18,7 @@ def get_video_info(video_url):
         return {"error": str(e)}
 
 def summarize_with_api(transcript_text, timeline_text):
-    """자막과 타임라인을 요약합니다."""
+    """자막과 타임라인을 활용해 요약합니다."""
     try:
         request_data = {
             "summary_info": json.dumps({
@@ -48,15 +48,13 @@ def chat_stream_with_api(query, video_id):
     
     print(f"Sending request data: {request_data}")  # 디버깅용 로그
     
-    endpoint = API_ENDPOINTS["chat_stream"]
-    with requests.post(endpoint, json=request_data, stream=True) as response:
+    with requests.post(API_ENDPOINTS["chat_stream"], json=request_data, stream=True) as response:
         print(f"Response status: {response.status_code}")  # 디버깅용 로그
         if response.status_code == 200:
             # SSE 형식으로 응답 처리
             for line in response.iter_lines():
                 if line:
                     line = line.decode('utf-8')
-                    # print(f"[API] 받은 원본 라인: {line}")
                     if line.startswith('data:'):
                         data = line[6:] # 'data: ' 제거
                         if data == "[DONE]":  # 스트림 종료 표시가 아니면 데이터 반환
@@ -64,7 +62,7 @@ def chat_stream_with_api(query, video_id):
                         try:
                             # JSON 디코딩하여 content 추출
                             chunk_data = json.loads(data) # JSON -> 파이썬 객체 (자동으로 유니코드 디코딩)
-                            print(f"JSON 디코딩 content: {chunk_data}")
+                            print(f"JSON 디코딩 content: {chunk_data}")  # 디버깅용 로그
                             yield chunk_data["content"]
                         except json.JSONDecodeError:
                             yield data
@@ -81,5 +79,5 @@ def get_chromadb_video_list():
         response.raise_for_status()
         return response.json()
     except requests.RequestException as e:
-        # st.error(f"ChromaDB 목록을 가져오는 데 실패했습니다: {e}")
+        print(f"ChromaDB 목록을 가져오는 데 실패했습니다: {e}")
         return []

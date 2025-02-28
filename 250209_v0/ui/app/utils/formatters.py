@@ -14,5 +14,4 @@ def format_summary(summary_text):
     if not summary_text:
         return "요약 정보가 없습니다."
     
-    # 마크다운 강조 추가
     return summary_text

@@ -4,9 +4,6 @@ from typing import Optional
 class VideoRequest(BaseModel):
     video_url: str
 
-# class PlaylistVideosRequest(BaseModel):
-#     playlist_url: str
-
 class TextRequest(BaseModel):
     summary_info: str
 
@@ -23,7 +20,3 @@ class PlaylistRequest(BaseModel):
     playlist_url: str
     start: int 
     end: int
-
-# class ChatHistoryRequest(BaseModel):
-#     prompt: str
-#     video_id: str

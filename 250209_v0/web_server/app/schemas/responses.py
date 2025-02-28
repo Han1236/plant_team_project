@@ -16,17 +16,3 @@ class PlaylistResponse(BaseModel):
 
 class SummarizeResponse(BaseModel):
     summary: str
-
-# class VideoInfo(BaseModel):
-#     title: str
-#     url: str
-#     thumbnail_url: Optional[str] = None
-#     formatted_duration: str
-#     view_count: int
-#     formatted_view_count: str
-
-# class PlaylistVideosResponse(BaseModel):
-#     videos: List[VideoInfo]
-
-# class PlaylistVideosResponse(BaseModel):
-#     videos: List[Dict[str, Union[str, int]]]

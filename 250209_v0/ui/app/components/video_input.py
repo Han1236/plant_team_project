@@ -7,7 +7,7 @@ def youtube_url_input():
     
     # URL 입력 필드
     video_url = st.text_input(
-        "YouTube URL을 입력하세요",
+        "자막 추출 후, 하단의 ChromaDB 생성 버튼을 클릭하면 QnA 서비스용 데이터가 생성됩니다.",
         value=st.session_state.get('video_url', ''),  # 세션에 저장된 URL 사용
         placeholder="https://www.youtube.com/watch?v=...",
         key="video_url_input"

@@ -13,9 +13,6 @@ def process_video_url(video_url: str):
     
     if not info:
         return {"error": "영상 정보를 가져오는데 실패했습니다."}
-    
-    # # 타임라인 정보 생성
-    # timeline = generate_markdown_timeline(info.get('chapters', []))
 
     result = {
         "video_id": info.get("id", ""),

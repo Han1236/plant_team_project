@@ -6,14 +6,26 @@ import requests
 from config import API_ENDPOINTS
 import os
 
-st.set_page_config(page_title="자막 추출", page_icon="📝")
+st.set_page_config(page_title="YouTube 자막 추출 & 요약", page_icon="📝")
 
-st.title("📝 YouTube 자막 추출")
+st.header("📝 YouTube 자막 추출 & 영상 요약")
+
+st.write("")  # 줄 하나 띄우기
 
 st.write("""
-YouTube 영상의 URL을 입력하면 해당 영상의 자막을 추출하여 보여줍니다.
-추출된 자막은 요약 및 QnA 기능의 기반 데이터로 사용됩니다.
+🎬 **YouTube 영상의 자막을 추출하고 요약해드립니다!**  
+유튜브 영상의 **URL을 입력하면**, 해당 영상의 자막을 분석하여 요약 및 QnA 기능을 제공합니다.  
+
+🔹 **제공 기능**  
+- 🎥 **영상 정보**: 제목, 채널명, 조회수, 업로드 날짜, 영상 길이, 타임라인  
+- 📝 **자막 추출 & 요약**: 영상 자막을 기반으로 자동 요약 생성  
+- ❓ **Q&A 기능**: 자막 데이터를 활용한 질문-답변 제공  
+
+👉 아래 **URL 자동 입력** 버튼을 눌러 시작해보세요!
 """)
+
+# 구분선
+st.markdown("---")
 
 # 세션 상태 초기화
 if 'video_url' not in st.session_state:
@@ -98,6 +110,10 @@ def display_video_list(playlist_url):
             st.error("플레이리스트 비디오 목록을 불러오는데 실패했습니다.")
     except Exception as e:
         st.error(f"오류 발생: {str(e)}")
+
+st.subheader("🍤슈카월드 플레이리스트")
+
+st.write("")
 
 # 유튜브 플레이리스트에서 비디오 목록 표시
 playlist_url = "https://www.youtube.com/playlist?list=PLJPjg3It2DXQUdlAocHh5FASozqwtJavv"  # 슈카월드 playlist URL
